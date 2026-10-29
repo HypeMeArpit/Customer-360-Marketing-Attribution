@@ -1,0 +1,43 @@
+version: 2
+
+sources:
+  - name: raw
+    database: nexvia-analytics-project
+    schema: raw_data
+    tables:
+      - name: ad_spend
+      - name: crm_profiles
+
+  - name: thelook
+    database: bigquery-public-data
+    schema: thelook_ecommerce
+    tables:
+      - name: users
+
+models:
+  - name: stg_crm_profiles
+    description: "Cleaned synthetic CRM profiles, one row per user."
+    columns:
+      - name: user_id
+        tests:
+          - unique
+          - not_null
+          - relationships:
+              to: source('thelook', 'users')
+              field: id
+      - name: loyalty_score
+        tests:
+          - dbt_utils.accepted_range:
+              min_value: 1
+              max_value: 100
+
+  - name: stg_ad_spend
+    description: "Daily marketing spend by channel."
+    columns:
+      - name: spend_amount
+        tests:
+          - not_null
+      - name: campaign_channel
+        tests:
+          - accepted_values:
+              values: ['Google Ads', 'Facebook Ads', 'Email', 'Organic Search', 'Twitter']
